@@ -6,22 +6,24 @@
 //
 
 import UIKit
+import CoreData
 
 class ViewController: UIViewController {
     //MARK:- Properties
     
     @IBOutlet weak var tableView: UITableView!
-    @IBOutlet weak var myLabel : UILabel!
-    var arrName: [String] = []
+    
+    // It now holds instances of NSManagedObject rather than simple strings
+    var people: [NSManagedObject] = []
     
     //MARK:- View Life Cycle
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        fetch()
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
         
     }
-    
     
     //MARK:- Actions
     
@@ -34,8 +36,7 @@ class ViewController: UIViewController {
         // Alert Actions
         let saveAction = UIAlertAction(title: "Save", style: .default) { [unowned self] (action) in
             if let textField = alert.textFields?.first?.text {
-                // Do Something
-                self.arrName.append(textField)
+                self.save(name: textField)
                 self.tableView.reloadData()
             }
         }
@@ -48,6 +49,46 @@ class ViewController: UIViewController {
     }
     
     
+    // Methods
+    
+    func save(name: String) {
+        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else {return}
+        
+        //1
+        let managedContext = appDelegate.persistentContainer.viewContext
+        
+        //2
+        let entity = NSEntityDescription.entity(forEntityName: "Person", in: managedContext)!
+        
+        let person = NSManagedObject(entity: entity, insertInto: managedContext)
+        //3
+        
+        person.setValue(name, forKeyPath: "name")
+        
+        do{
+            try managedContext.save()
+            people.append(person)
+        }catch let error as NSError {
+            print("Couldn't save the data \(error)")
+        }
+    }
+    
+    func fetch() {
+        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else {return}
+        //1
+        let managedContext  = appDelegate.persistentContainer.viewContext
+
+        //2
+        let fetchRequest    = NSFetchRequest<NSManagedObject>(entityName: "Person")
+        
+        do {
+          people = try managedContext.fetch(fetchRequest)
+        } catch let error as NSError {
+          print("Could not fetch. \(error), \(error.userInfo)")
+        }
+        
+    }
+    
 }
 
 //MARK:- TableView Delegate & DataSource
@@ -55,12 +96,22 @@ class ViewController: UIViewController {
 extension ViewController: UITableViewDelegate, UITableViewDataSource {
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return arrName.count
+        return people.count
     }
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
-        cell.textLabel?.text = arrName[indexPath.row]
+        let persons = people[indexPath.row]
+        
+        cell.textLabel?.text = persons.value(forKeyPath: "name") as? String
         
         return cell
     }
 }
+ 
+
+/*
+ << Important NOTES >>
+ 
+ NSManagedObject doesn’t know about the name attribute you defined in your Data Model, so there’s no way of accessing it directly with a property. The only way Core Data provides to read the value is key-value coding, commonly referred to as KVC
+ 
+ */
