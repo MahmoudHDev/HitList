@@ -15,13 +15,13 @@ class ViewController: UIViewController {
     var arrName: [String] = []
     
     //MARK:- View Life Cycle
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
         
     }
-
+    
     
     //MARK:- Actions
     
@@ -35,9 +35,9 @@ class ViewController: UIViewController {
         let saveAction = UIAlertAction(title: "Save", style: .default) { [unowned self] (action) in
             if let textField = alert.textFields?.first?.text {
                 // Do Something
+                self.arrName.append(textField)
+                self.tableView.reloadData()
             }
-
-            
         }
         
         let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
@@ -47,7 +47,7 @@ class ViewController: UIViewController {
         present(alert, animated: true)
     }
     
-
+    
 }
 
 //MARK:- TableView Delegate & DataSource
